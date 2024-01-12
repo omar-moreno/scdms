@@ -54,4 +54,19 @@ def patch_dataset(dc : CDMSDataCatalog, dataset, site: str, resource : str):
         dc.client.patch_dataset(dataset.path, payload, site='SLAC')
     except: return
 
+import os
 
+def find_unregistered(dc : CDMSDataCatalog, datasets, path : str, log_path : str):
+
+    # List of files that are registered
+    registered_files = [dataset.path for dataset in datasets]
+       
+    # Generate a list of unregistered files 
+    #files = [os.path.join(path, f) for (dirpath, dirnames, filenames) in os.walk(path) for f in filenames]
+    files = [os.path.join(dirpath, f) for (dirpath, dirnames, filenames) in os.walk(path) for f in filenames]
+    unregistered_files = [f for f in files if f[f.find('/CDMS'):] not in registered_files]
+
+    log = open(log_path, 'w')
+    log.write('Total unregisted files: ' + str(len(unregistered_files)) + '\n')
+    for f in unregistered_files: log.write(f+'\n')
+    log.close()

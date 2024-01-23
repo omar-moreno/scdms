@@ -72,15 +72,23 @@ def find_unregistered(dc : CDMSDataCatalog, datasets, path : str, log_path : str
     log.close()
 
 def set_master(dc : CDMSDataCatalog, datasets, path : str, resource_prefix: str, site : str):
-    
+
+    # Get the list of files on disk. The second processing is used to match 
+    # the path of disk to the resource/
     files = [os.path.join(dirpath, f) for (dirpath, dirnames, filenames) in os.walk(path) for f in filenames]
     files = [f[f.find(resource_prefix):] for f in files]
 
+    # Loop through all files and extract the locations. If one of the locations
+    # is associated with the given site and the file exists on disk, set it to
+    # the master location.
     for dataset in datasets: 
         for loc in dataset.locations: 
             if loc.site == site: 
-                if loc.resource in files: 
-                    print('File exists at slac')
+                if loc.resource in files:
+                    payload = {'master' : True}
+                    dc.client.patch_dataset(dataset.path, payload, site=site)
+                else: 
+                    print('File',loc.resource,'does not exist at', site)
 
 
     

@@ -70,3 +70,17 @@ def find_unregistered(dc : CDMSDataCatalog, datasets, path : str, log_path : str
     log.write('Total unregisted files: ' + str(len(unregistered_files)) + '\n')
     for f in unregistered_files: log.write(f+'\n')
     log.close()
+
+def set_master(dc : CDMSDataCatalog, datasets, path : str, resource_prefix: str, site : str):
+    
+    files = [os.path.join(dirpath, f) for (dirpath, dirnames, filenames) in os.walk(path) for f in filenames]
+    files = [f[f.find(resource_prefix):] for f in files]
+
+    for dataset in datasets: 
+        for loc in dataset.locations: 
+            if loc.site == site: 
+                if loc.resource in files: 
+                    print('File exists at slac')
+
+
+    

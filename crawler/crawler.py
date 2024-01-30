@@ -1,7 +1,9 @@
 
 import datacat
+import os
 
 from CDMSDataCatalog import CDMSDataCatalog
+from datetime import datetime
 
 class DCCrawler:
 
@@ -18,7 +20,7 @@ class DCCrawler:
 
         self.resource_prefix = ''
         if 'resource_prefix' in config['crawler']:
-            self.resource_prefix = config['crawler']['resource_prefix'])
+            self.resource_prefix = config['crawler']['resource_prefix']
     
         self.site = 'SLAC'
         if 'site' in config['crawler']:
@@ -41,8 +43,8 @@ class DCCrawler:
         print('Total datasets in', path, ':', len(datasets))
         return datasets
 
-    def crawl(self, path : str = '/CDMS'):
-        datasets = self.get_dataset(path)
+    def crawl(self):
+        datasets = self.get_dataset(self.dc_path)
 
         fs_path = self.fs_prefix+self.dc_path
         files = [os.path.join(dirpath, f) for (dirpath, dirnames, filenames) in os.walk(fs_path) for f in filenames]
@@ -51,10 +53,11 @@ class DCCrawler:
         for dataset in datasets: 
             for loc in dataset.locations: 
                 if loc.site == self.site: 
-                    print('Patching dataset.')
-                    #payload = {'scanStatus': 'OK'}
-                    #self.dc.client.patch_dataset(dataset.path, payload, site=self.site)
-                    # TODO: Add timestamp
+                    payload = {
+                            'scanStatus': 'OK',
+                            'locationScanned': datetime.utcnow().isoformat()+"Z"
+                    }
+                    self.dc.client.patch_dataset(dataset.path, payload, site=self.site)
 
 import argparse
 import tomli
@@ -63,9 +66,6 @@ def main(args : argparse.Namespace) -> None:
     '''
     '''
 
-    dc_config  = None
-    path = '/CDMS'
-    
     if not args.config: 
         parser.error('A config file needs to be specified.')
     
@@ -73,6 +73,7 @@ def main(args : argparse.Namespace) -> None:
     with open(args.config, 'rb') as f:
         config = tomli.load(f)
 
+    dc_config  = None
     if 'config' in config['catalog']: 
         dc_config = config['catalog']['config']
     dc = CDMSDataCatalog(config_file=dc_config)

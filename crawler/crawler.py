@@ -1,8 +1,11 @@
 
 import datacat
+import logging
 import os
+import time
 
 from CDMSDataCatalog import CDMSDataCatalog
+from datetime import date
 from datetime import datetime
 
 class DCCrawler:
@@ -26,13 +29,21 @@ class DCCrawler:
         if 'site' in config['crawler']:
             self.site = config['crawler']['site']
 
-    def get_dataset(self, path : str = '/CDMS'): 
-        # Get the childen in the path to check if a folder needs to be explored
-        children = self.dc.client.children(path)
+        log_fn = ('%s_crawler.log' % date.today().isoformat())
+        logging.basicConfig(filename=log_fn, level=logging.DEBUG,
+                            format="%(asctime)s %(message)s")
+
+    def get_dataset(self, path : str = '/CDMS'):
+        try: 
+            # Get the childen in the path to check if a folder needs to be explored
+            children = self.dc.client.children(path)
     
-        # This retrieves all datasets in the path excluding folders. If the path
-        # doesn't contain a dataset, an empty list is returned.
-        datasets = self.dc.client.search(path, site='All')
+            # This retrieves all datasets in the path excluding folders. If the path
+            # doesn't contain a dataset, an empty list is returned.
+            datasets = self.dc.client.search(path, site='All')
+        except requests.exceptions.HTTPError as err:
+            logging.error('HTTPError %s' % err)
+            return []
 
         # Loop through all the children and recursively retrieve the datasets.
         for child in children:
@@ -40,7 +51,7 @@ class DCCrawler:
                 datasets.extend(self.get_dataset(child.path))
                 continue
 
-        print('Total datasets in', path, ':', len(datasets))
+        logging.info('Total datasets in %s : %s', path, len(datasets))
         return datasets
 
     def crawl(self):
@@ -49,15 +60,27 @@ class DCCrawler:
         fs_path = self.fs_prefix+self.dc_path
         files = [os.path.join(dirpath, f) for (dirpath, dirnames, filenames) in os.walk(fs_path) for f in filenames]
         files = [f[f.find(self.resource_prefix):] for f in files]
+        prefix = fs_path[:fs_path.find(self.resource_prefix)]
 
         for dataset in datasets: 
             for loc in dataset.locations: 
-                if loc.site == self.site: 
-                    payload = {
-                            'scanStatus': 'OK',
-                            'locationScanned': datetime.utcnow().isoformat()+"Z"
-                    }
-                    self.dc.client.patch_dataset(dataset.path, payload, site=self.site)
+                if loc.site == self.site:
+                    payload = { 'locationScanned': datetime.utcnow().isoformat()+"Z" }
+                    if loc.resource in files: 
+                        stat = os.stat(prefix+loc.resource)
+                        payload.update( {'scanStatus': 'OK', 'size': stat.st_size } )
+                    elif loc.site == 'SNOLAB':
+                        payload['scanStatus'] = 'ARCHIVED'
+                        logging.info('File %s at %s has been ARCHIVED.', loc.resource, loc.site)
+                    else: 
+                        payload['scanStatus'] = 'MISSING'
+                        logging.info('File %s at %s is MISSING.', loc.resource, loc.site)
+                    
+                    try: 
+                        self.dc.client.patch_dataset(dataset.path, payload, site=self.site)
+                    except DcException as err:
+                        logging.error('DataCat Error: %s', err)
+
 
 import argparse
 import tomli

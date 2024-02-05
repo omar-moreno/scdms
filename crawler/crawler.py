@@ -57,19 +57,14 @@ class DCCrawler:
     def crawl(self):
         datasets = self.get_dataset(self.dc_path)
 
-        fs_path = self.fs_prefix+self.dc_path
-        files = [os.path.join(dirpath, f) for (dirpath, dirnames, filenames) in os.walk(fs_path) for f in filenames]
-        files = [f[f.find(self.resource_prefix):] for f in files]
-        prefix = fs_path[:fs_path.find(self.resource_prefix)]
-
         for dataset in datasets: 
             for loc in dataset.locations: 
-                if loc.site == self.site:
+                if loc.site == self.site: 
                     payload = { 'locationScanned': datetime.utcnow().isoformat()+"Z" }
-                    if loc.resource in files: 
-                        stat = os.stat(prefix+loc.resource)
+                    if os.path.exists(self.fs_prefix+loc.resource):
+                        stat = os.stat(self.fs_prefix+loc.resource)
                         payload.update( {'scanStatus': 'OK', 'size': stat.st_size } )
-                    elif loc.site == 'SNOLAB':
+                    elif loc.site == 'SNOLAB' and len(dataset.locations) > 1:
                         payload['scanStatus'] = 'ARCHIVED'
                         logging.info('File %s at %s has been ARCHIVED.', loc.resource, loc.site)
                     else: 

@@ -30,8 +30,8 @@ class DCCrawler:
             self.site = config['crawler']['site']
 
         log_fn = ('%s_crawler.log' % date.today().isoformat())
-        logging.basicConfig(filename=log_fn, level=logging.DEBUG,
-                            format="%(asctime)s %(message)s")
+        logging.basicConfig(filename=log_fn, level=logging.INFO,
+                            format="[%(levelname)s] %(asctime)s %(message)s")
 
     def get_dataset(self, path : str = '/CDMS'):
         try: 
@@ -57,8 +57,8 @@ class DCCrawler:
     def crawl(self):
         datasets = self.get_dataset(self.dc_path)
 
-        for dataset in datasets: 
-            for loc in dataset.locations: 
+        for dataset in datasets:
+            for loc in dataset.locations:
                 if loc.site == self.site: 
                     payload = { 'locationScanned': datetime.utcnow().isoformat()+"Z" }
                     if os.path.exists(self.fs_prefix+loc.resource):

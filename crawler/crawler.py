@@ -40,7 +40,8 @@ class DCCrawler:
     
             # This retrieves all datasets in the path excluding folders. If the path
             # doesn't contain a dataset, an empty list is returned.
-            datasets = self.dc.client.search(path, site='All')
+            query = "scanStatus = 'UNSCANNED' or scanStatus = 'MISSING'" 
+            datasets = self.dc.client.search(path, site=self.site, query=query)
         except requests.exceptions.HTTPError as err:
             logging.error('HTTPError %s' % err)
             return []
@@ -63,6 +64,7 @@ class DCCrawler:
                     payload = { 'locationScanned': datetime.utcnow().isoformat()+"Z" }
                     if os.path.exists(self.fs_prefix+loc.resource):
                         stat = os.stat(self.fs_prefix+loc.resource)
+                        if loc.site == 'SLAC': payload['master'] = True
                         payload.update( {'scanStatus': 'OK', 'size': stat.st_size } )
                     elif loc.site == 'SNOLAB' and len(dataset.locations) > 1:
                         payload['scanStatus'] = 'ARCHIVED'

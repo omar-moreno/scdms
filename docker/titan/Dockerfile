@@ -23,7 +23,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Enable Apache modules for CGI and Perl
-RUN a2enmod php && \
+RUN a2enmod php8.3 && \
     a2enmod cgi && \
     a2enmod perl
 

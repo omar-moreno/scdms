@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-http-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: titan-http-server
+  template:
+    metadata:
+      labels:
+        app:  titan-http-server
+    spec:
+      containers:
+        - name: apache
+          image: omarmoreno/titan-dev:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80

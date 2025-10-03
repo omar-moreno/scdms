@@ -4,3 +4,8 @@ kind: Kustomization
 resources:
   - titan.yaml
   - service.yaml
+
+configMapGenerator:
+  - name: apache-config
+    files: 
+      - apache-site.conf

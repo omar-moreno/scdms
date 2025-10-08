@@ -22,7 +22,13 @@ spec:
             - name: apache-config-volume
               mountPath: /etc/apache2/sites-available/000-default.conf
               subPath: apache-site.conf
+            - name: supercdms-public-html
+              mountPath: /sdf/data/supercdms/public_html/cdms
       volumes:
         - name: apache-config-volume
           configMap:
             name: apache-config
+        - name: supercdms-public-html
+          hostPath:
+             path: /sdf/data/supercdms/public_html/cdms
+             type: Directory

@@ -25,6 +25,9 @@ def get_resource_info(datasets):
     resource_prefix = {}
 
     for dataset in datasets:
+        if not hasattr(dataset, "locations"):
+            print(f"The dataset {dataset.path} is missing a location.")
+
         for loc in dataset.locations:
 
             if loc.site not in site_count:
